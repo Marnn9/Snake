@@ -4,20 +4,19 @@ import { gameStatus, EGameStatus, sprites} from "./game.js"
 import { TBoardCell } from "./board.js";
 
 
-/**Class that makes and checks for collition on the bait */
+/**Class that makes and draws at a new apple at new random position if it is collition on the bait in update */
 export function TBait() {
     const boardCell = new TBoardCell(1, 1);
     const spi = sprites.Bait;
-    const pos = new GLib2D.TPoint(Math.floor(Math.random() * 23) + 1, Math.floor(Math.random() * 18) + 1);
+    const pos = new GLib2D.TPoint(Math.floor(Math.random() * 19) + 1, Math.floor(Math.random() * 16) + 1);
     const sprite = new GLib2D.TSprite(spi,pos);
-    const centerPos = new GLib2D.TPoint(0,0);
 
     this.BaitPos = function(){
         return(boardCell)
     }
 
     this.update = function(){
-        let posX = Math.floor(Math.random()* 23);
+        let posX = Math.floor(Math.random()* 20);
         let posY = Math.floor(Math.random()* 17);
         boardCell.row = posX;
         boardCell.col = posY;
@@ -25,23 +24,15 @@ export function TBait() {
         pos.y = boardCell.row * spi.height;
         sprite.pos = pos;
         sprite.draw;
-
     }
 
     this.draw = function () { 
         switch(gameStatus){
             case EGameStatus.Running:
             case EGameStatus.Pause:
-            case EGameStatus.GameOver:
             sprite.draw();
             break;
             }  
     }
-
-   /*  this.checkCollision = function (aRect){
-        centerPos.x = pos.x + spi.width/2;
-        centerPos.y = pos.y + spi.height/2;
-        return aRect.checkHitPosition(centerPos);
-    } */
 
 }//end of class TBait

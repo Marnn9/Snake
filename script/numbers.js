@@ -1,5 +1,5 @@
 import * as GLib2D from "./Graphic_Lib_2D.js";
-import {sprites, ctx, EGameStatus, gameStatus} from  "./game.js";
+import {sprites, ctx, EGameStatus, gameStatus, gameProps} from  "./game.js";
 
 /**draws the gamescore, counts, places and edit opacity  */
 export function TNumber(aSpriteInfo, aPosition, aScale, aAlpha){
@@ -9,10 +9,6 @@ export function TNumber(aSpriteInfo, aPosition, aScale, aAlpha){
     let alpha = aAlpha;
     const spNumbers = [];  
 
-   /*  for(let i = 0; i < scale; i++){
-        const newPos = new GLib2D.TPoint(pos.x - (spi.width * i), pos.y);
-        spNumbers.push(new GLib2D.TSprite(spi, newPos));
-    }  */
 
     function createDigit(){
         const newPos = new GLib2D.TPoint(pos.x - ((spi.width + 2) * spNumbers.length * scale), pos.y);
@@ -23,13 +19,11 @@ export function TNumber(aSpriteInfo, aPosition, aScale, aAlpha){
     }
     createDigit();
 
+    //draws all the time, rules set in TGamescore;
     this.draw = function(){
-        switch(gameStatus){
-        case EGameStatus.GameOver:
         for(let i = 0; i < spNumbers.length; i++){
             spNumbers[i].draw();
-        }
-        break;
+        
         }
     }
 
@@ -72,36 +66,46 @@ export function TNumber(aSpriteInfo, aPosition, aScale, aAlpha){
 /** shows gamescore when playing */
 
 export function TGameScore() {
-    const Points = new TNumber(sprites.Number, new GLib2D.TPoint(400,400), 1, 1);
-    const EndPoints = new TNumber(sprites.Number, (200,200), 1, 1);
-    /* const spi = sprites.Number;
-    const pos = new GLib2D.TPoint(50,20);
-    const posEnd = new GLib2D.TPoint(40,40);
-    const number = new TNumber(spi, pos, 4, 0);
-    const EndNumber = new TNumber(spi, posEnd, 4, 0);
-    let score = 0; */
+    const EndPoints = new TNumber(sprites.Number, new GLib2D.TPoint(730,260), 1, 1);
+    const Points = new TNumber(sprites.Number, new GLib2D.TPoint(855,130), 1, 0.3);
+    const appleScore = new TNumber(sprites.Number, new GLib2D.TPoint(855,20), 1, 0.3);
+    let score = 0;
+    let Apple = 0; //number of apples eaten
 
     this.draw = function(){
         switch(gameStatus){
             case EGameStatus.Running:
-                Points.draw();
-                break;
+            case EGameStatus.Pause:    
+            Points.draw();
+            appleScore.draw();
+            break;
             case EGameStatus.GameOver:
                 EndPoints.draw();
                 break;   
         }
     }
 
-     this.setScore = function(aDelta){
-       if(aDelta > 0){
-        score += aDelta;
-       Points.update(score);
-       EndPoints.update(score);
-    }
+    this.update = function(){
+        EndPoints.update(score);
+        Points.update(score);
+        appleScore.update(score);
     }
 
-    this.getScore = function(){
-        return score;
+      this.setScore = function(aDelta, anApple){
+        score += aDelta;
+        Apple += anApple;
+       EndPoints.update(score);
+       Points.update(score);
+       appleScore.update(Apple);
     } 
+
+    this.getScore = function(){
+        return score + appleScore;
+    } 
+
+    this.resetPoints =function(){ 
+       score = 0;
+       Apple = 0;
+    };
 
 }//end of class TGameScore

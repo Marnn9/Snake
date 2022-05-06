@@ -1,11 +1,11 @@
 "use strict";
 import * as GLib2D from "./Graphic_Lib_2D.js";
-import { TBoardCell, TBoardCellInfo} from "./board.js"
+import { TBoardCell, TBoardCellInfo,EBoardCellInfoType} from "./board.js"
 import { TSnakeBody, TSnakeHead, TSnakeTail } from "./snake.js"
 import { TBait } from "./bait.js";
 import { THomeButton, TReplayButton, TResumeButton, TStartButton } from "./Buttons.js";
 import { TInfoboard } from "./Infoboard.js";
-import { TGameScore, TNumber } from "./numbers.js";
+import { TGameScore} from "./numbers.js";
 
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -27,12 +27,14 @@ const SnakeSheetData = {
 export const sprites = SnakeSheetData;
 export let cvs = null;
 export let ctx = null;
-const mousePos = new GLib2D.TPoint(0, 0);
 
 export const EDirection = { Up: 0, Right: 1, Left: 2, Down: 3 };
 export const EGameStatus = { New: 0, Running: 1, Pause: 2, GameOver: 3};
 
 export let gameStatus = EGameStatus.New;
+export let insertNewBody = null;
+
+const mousePos = new GLib2D.TPoint(0, 0);
 
 const GameProps = {
     gameBoard: null,
@@ -47,78 +49,106 @@ const GameProps = {
     Retry: null,
     Resume: null,
     Number: null,
-    EndPoints: null,
-    Points: null
-    //direction: null
+    gamePoints: null
 }
+
 export const gameProps = GameProps;
 export const gameBoardSize = new TBoardCell(25, 20);
 
+
+let insertBody = null;
+
+
 let hndUpdateGame = null;
 
-/* /** object of different times 
+let spawnTime = null;
+let catchTime = null;
+let time = null; 
+
+let gameSpeeds = 500;
+
+
+
+/**tried making bait as Array but the apple couldn't respawn and despawn easily with this method */
+/*  object of different times 
 const TimeSchedule = {
     timeLast: 0,
     timeCreate: 3000 
 }
-
-let gameSpeed = 1;
-
-/**making it an object 
+making it an object 
 const timeSchedulefood = Object.create(TimeSchedule); */
 
 //--------------------------------------------------------------------------------------------------------------------
 //------ Function and Events
 //--------------------------------------------------------------------------------------------------------------------
 
-
-/**drawing the objects from the GameProps */
+/**drawing the objects from gameProps */
 function drawGame() {
+   /*   for(let index = 0; index < gameProps.baits.length; index ++){
+        gameProps.baits[index].draw()
+    }  */
+   
     ctx.clearRect(0, 0, cvs.width, cvs.height);
     gameProps.bait.draw()
-   /*   for(let index = 0; index < gameProps.baits.length; index ++){
-        gameProps.baits[index].draw();
-    }  */
+    
+    switch(gameStatus){
+        case EGameStatus.Running:
+        case EGameStatus.Pause:
     for (let i = 0; i < gameProps.snake.length; i++) {
         gameProps.snake[i].draw();
     }
+    break;
+    }
+    
     gameProps.GameOver.draw();
     gameProps.Play.draw();
     gameProps.Retry.draw();
     gameProps.Home.draw();
     gameProps.Resume.draw();
-    gameProps.EndPoints.draw();
-    gameProps.Points.draw();
-    
-    
-    requestAnimationFrame(drawGame);
-}
+    gameProps.gamePoints.draw();
 
-/**constantly updates the position and the frames of the sprites */
-function updateGame() {
-    for (let i = 0; i < gameProps.snake.length; i++) {    
-        const snakeElement = gameProps.snake[i];
+    requestAnimationFrame(drawGame);
+}//end of drawGame
+
+/**constantly updates the position and the frames of the game */
+export function updateGame() {
+    if(gameStatus === EGameStatus.Running){
+        for (let i = 0; i < gameProps.snake.length; i++) {    
+            const snakeElement = gameProps.snake[i];
         if(snakeElement == gameProps.snake[0]){
             if (gameProps.snake[0].checkCollision()) {
                 gameStatus = EGameStatus.GameOver;
                 break;
+            }
+            BaitCollition()
+        }else if(i === (gameProps.snake.length -2)){
+            if(insertNewBody){
+                insertBody = snakeElement.MakeBody();
             }
         }
         if(gameStatus == EGameStatus.Running){
             snakeElement.update();
         }
     } 
-
-    BaitCollition();
+  
+    if(insertBody!== null){
+        const tail = gameProps.snake.pop();
+        gameProps.snake.push(insertBody);
+        gameProps.snake.push(tail);
+        insertBody = null;
+    }
     
-       /*  for(let index = 0; index < gameProps.baits.length; index ++){
+           /*  for(let index = 0; index < gameProps.baits.length; index ++){
             gameProps.baits[index].update();
         } */
-    
     //spawnGameProps();
-}//end of update game
+    }
 
-/** making the gameprops revert so you can refresh without refreshing the website */
+    gameProps.Play.update();
+
+}//end of updateGame
+
+/** making the gameProps to revert so you can refresh without refreshing the whole website */
 export function newGame() {
     if( hndUpdateGame != null){
         clearInterval(hndUpdateGame);
@@ -132,26 +162,30 @@ export function newGame() {
         gameProps.gameBoard.push(row);
     }
     gameProps.snake = [];
-    let newSnakeElement = new TSnakeHead(new TBoardCell(3, 10));
+    let newSnakeElement = new TSnakeHead(new TBoardCell(2, 10));
     gameProps.snake.push(newSnakeElement);
 
-    let newSnakeBody = new TSnakeBody(new TBoardCell(2, 10));
-    gameProps.snake.push(newSnakeBody);
+    newSnakeElement = new TSnakeBody(new TBoardCell(1, 10));
+    gameProps.snake.push(newSnakeElement);
 
-    let newSnakeTail = new TSnakeTail(new TBoardCell(1, 10));
-    gameProps.snake.push(newSnakeTail);
+    newSnakeElement = new TSnakeTail(new TBoardCell(0, 10));
+    gameProps.snake.push(newSnakeElement);
+    BaitCollition();
 
-
-    //setting the gamestatus when new game;
+    gameSpeeds = 500;
     gameStatus = EGameStatus.New;
-    hndUpdateGame = setInterval(updateGame, 400);
-    gameProps.bait.update();
-}
+    hndUpdateGame = setInterval(updateGame, gameSpeeds);
+    
+    
+    gameProps.gamePoints.resetPoints();//sets points to 0 when you replay
+    gameProps.bait.update()
+    gameProps.gamePoints.update();
 
-/** This function is run after sprite sheet image is loaded.
- * This is a call-back function from Graphic_Lib_2D */
+
+}//end of newGame
+
+/** This function is run after sprite sheet image is loaded.*/
 function gameReady() {
-    const centerPos = new GLib2D.TPoint(cvs.width / 2, cvs.height / 2);
     gameProps.bait = new TBait();
     
     gameProps.Play = new TStartButton();
@@ -160,11 +194,11 @@ function gameReady() {
     gameProps.Resume = new TResumeButton();
     
     gameProps.GameOver = new TInfoboard();
-    gameProps.Points = new TGameScore();
-    gameProps.EndPoints = new TGameScore();
+    gameProps.gamePoints = new TGameScore();
+    
     newGame();
     requestAnimationFrame(drawGame);
-}
+}//end of gameReady
 
 function updateMousePos(aEvent) {
     mousePos.x = aEvent.clientX - cvs.offsetLeft;
@@ -187,30 +221,32 @@ function cvsMouseMove(aEvent) {
         cvs.style.cursor = "pointer";
     }else{
          cvs.style.cursor = "default"}   
-}
+}//end of cvsMouseMove
 
 /**what event that happens when you click the buttons */
 function cvsClick() {
     // Mouse button has clicked on Canvas
     cvs.style.cursor = "default";
      if(gameProps.Play.isMouseOver(mousePos)){
+        spawnTime = Date.now(); 
         gameStatus = EGameStatus.Running;
         cvs.style.cursor = "default";
     }else if(gameProps.Retry.isMouseOver(mousePos)){
-        gameStatus = EGameStatus.Running;
         newGame();
+        gameStatus = EGameStatus.Running;
         cvs.style.cursor = "default";
     }else if(gameProps.Home.isMouseOver(mousePos)){
-        gameStatus = EGameStatus.New;
         newGame();
+        gameStatus = EGameStatus.New;
         cvs.style.cursor = "default";
     }else if(gameProps.Resume.isMouseOver(mousePos)){
+        spawnTime = Date.now(); 
         gameStatus = EGameStatus.Running;
         cvs.style.cursor = "default";
     }else{
         cvs.style.cursor = "default"}  
         
-}
+}//end of cvsClick
 
 
 /** the keys you use to play the game */
@@ -225,6 +261,7 @@ function cvsKeydown(aEvent) {
             break;
         case "ArrowUp":
             snakeHead.setDirection(EDirection.Up);
+
             break;
         case "ArrowDown":
             snakeHead.setDirection(EDirection.Down);
@@ -237,16 +274,49 @@ function cvsKeydown(aEvent) {
             }
             break;
     }
-}
+}//end of cvskeydown
 
-export function BaitCollition(){
+/** if the snake head and apple is in the same place: the apple moves and gives points 
+ * based on the time between the spawn and the catch of the apple, when an apple is eaten speed increases by SpeedIncrease*/
+function BaitCollition(){
     if(gameProps.bait.BaitPos().row === gameProps.snake[0].SnakePos().row &&
     gameProps.bait.BaitPos().col === gameProps.snake[0].SnakePos().col){
     gameProps.bait.update();
+    catchTime = Date.now();
+
+    insertNewBody = true;
+
+    /* let newSnakeElement = new TSnakeBody(new TBoardCell(1, 10));
+     /* if(snake[i].length === -1){
+        gameProps.Body.MakeBody(); 
+    gameProps.snake.push(newSnakeElement); */
+    
+    const SpeedIncrease = 10;
+    clearInterval(hndUpdateGame);
+    hndUpdateGame = setInterval(updateGame, (gameSpeeds -= SpeedIncrease));
+    
+    time = catchTime - spawnTime;
+    let points = null
+         function TimeScore(){
+        if (time <= 3000){
+            points = 10;
+        }else if((time < 6000) && (time > 3000)){
+            points = 8;
+        }else if((time < 9000) && (time > 6000)){
+            points = 6
+        }else if((time < 12000) && (time > 9000)){
+            points = 4;
+        }else{points = 2};
+        return points;    
+        }
+       TimeScore();
+    gameProps.gamePoints.setScore(points, +1);
+    spawnTime = Date.now(); 
     }
+
 }
 
-/*/**makes the Bait appear when made 
+/*makes the Bait appear when made and function run 
 function spawnGameProps(){
     const now = Date.now();
     let timeDelta = now - timeSchedulefood.timeLast;
@@ -255,18 +325,7 @@ function spawnGameProps(){
             timeSchedulefood.timeLast = now;
         } 
 }
-
- /** function to change to game over when snake hits wall 
-export function checkCollision(aRect){
-     for(let index = 0; index < gameProps.baits.length; index ++){
-        if(gameProps.baits[index].checkCollision(aRect)){
-            gameProps.baits.splice(index, 1);
-            gameProps.GameScore.setScore(1);
-            return;
-        }
-        
-    } 
-} */
+*/
 
 
 export function initGame(aCanvas) {
