@@ -6,6 +6,7 @@ import { TBait } from "./bait.js";
 import { THomeButton, TReplayButton, TResumeButton, TStartButton } from "./Buttons.js";
 import { TInfoboard } from "./Infoboard.js";
 import { TGameScore} from "./numbers.js";
+import { TSymboles } from "./symboles.js";
 
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -22,7 +23,9 @@ const SnakeSheetData = {
     Resume:     { x:   0, y: 357, width: 202, height: 202, count:  2 },
     Home:       { x:  64, y: 994, width: 170, height: 167, count:  1 },
     Number:     { x:   0, y: 560, width:  81, height:  86, count: 10 },
-    GameOver:   { x:   0, y: 647, width: 856, height: 580, count:  1 }
+    GameOver:   { x:   0, y: 647, width: 856, height: 580, count:  1 },
+    AppleEaten: { x: 380, y:   0, width:  32, height:  34, count:  1 },
+    scoreSymb:  { x: 379, y:  34, width:  33, height:  59, count:  1 }
 };
 export const sprites = SnakeSheetData;
 export let cvs = null;
@@ -49,7 +52,8 @@ const GameProps = {
     Retry: null,
     Resume: null,
     Number: null,
-    gamePoints: null
+    gamePoints: null,
+    Symbols: null
 }
 
 export const gameProps = GameProps;
@@ -65,11 +69,12 @@ let spawnTime = null;
 let catchTime = null;
 let time = null; 
 
-let gameSpeeds = 500;
+let gameSpeeds = null;
 
 
+/**tried making bait as an Array but the apple couldn't respawn and despawn by time,
+ * as easily with this method as the method using BaitCollition */
 
-/**tried making bait as Array but the apple couldn't respawn and despawn easily with this method */
 /*  object of different times 
 const TimeSchedule = {
     timeLast: 0,
@@ -106,6 +111,7 @@ function drawGame() {
     gameProps.Home.draw();
     gameProps.Resume.draw();
     gameProps.gamePoints.draw();
+    gameProps.Symbols.draw();
 
     requestAnimationFrame(drawGame);
 }//end of drawGame
@@ -135,7 +141,7 @@ export function updateGame() {
         const tail = gameProps.snake.pop();
         gameProps.snake.push(insertBody);
         gameProps.snake.push(tail);
-        insertBody = null;
+        insertNewBody = null;
     }
     
            /*  for(let index = 0; index < gameProps.baits.length; index ++){
@@ -161,7 +167,7 @@ export function newGame() {
         }
         gameProps.gameBoard.push(row);
     }
-    gameProps.snake = [];
+    gameProps.snake = []; //resets snake to minimal length when new game by clearing the Array
     let newSnakeElement = new TSnakeHead(new TBoardCell(2, 10));
     gameProps.snake.push(newSnakeElement);
 
@@ -170,17 +176,14 @@ export function newGame() {
 
     newSnakeElement = new TSnakeTail(new TBoardCell(0, 10));
     gameProps.snake.push(newSnakeElement);
-    BaitCollition();
-
-    gameSpeeds = 500;
+    
+    gameSpeeds = 500; //sets defaultspeed back to start-speed when a new game starts
     gameStatus = EGameStatus.New;
     hndUpdateGame = setInterval(updateGame, gameSpeeds);
-    
     
     gameProps.gamePoints.resetPoints();//sets points to 0 when you replay
     gameProps.bait.update()
     gameProps.gamePoints.update();
-
 
 }//end of newGame
 
@@ -193,8 +196,11 @@ function gameReady() {
     gameProps.Home = new THomeButton();
     gameProps.Resume = new TResumeButton();
     
+    gameProps.Symbols = new TSymboles();
+
     gameProps.GameOver = new TInfoboard();
     gameProps.gamePoints = new TGameScore();
+    
     
     newGame();
     requestAnimationFrame(drawGame);
@@ -277,24 +283,21 @@ function cvsKeydown(aEvent) {
 }//end of cvskeydown
 
 /** if the snake head and apple is in the same place: the apple moves and gives points 
- * based on the time between the spawn and the catch of the apple, when an apple is eaten speed increases by SpeedIncrease*/
+ * based on the time between the spawn and the catch of the apple, when an apple is eaten speed increases by SpeedIncrease
+ * then the apple moves to new random location given from TBait*/
 function BaitCollition(){
     if(gameProps.bait.BaitPos().row === gameProps.snake[0].SnakePos().row &&
     gameProps.bait.BaitPos().col === gameProps.snake[0].SnakePos().col){
-    gameProps.bait.update();
-    catchTime = Date.now();
+        gameProps.bait.update();
+        catchTime = Date.now();
 
     insertNewBody = true;
 
-    /* let newSnakeElement = new TSnakeBody(new TBoardCell(1, 10));
-     /* if(snake[i].length === -1){
-        gameProps.Body.MakeBody(); 
-    gameProps.snake.push(newSnakeElement); */
-    
     const SpeedIncrease = 10;
     clearInterval(hndUpdateGame);
-    hndUpdateGame = setInterval(updateGame, (gameSpeeds -= SpeedIncrease));
-    
+    if(hndUpdateGame >= 35){hndUpdateGame = setInterval(updateGame, 150)}
+    else{hndUpdateGame = setInterval(updateGame, (gameSpeeds -= SpeedIncrease));}
+        
     time = catchTime - spawnTime;
     let points = null
          function TimeScore(){
@@ -310,11 +313,11 @@ function BaitCollition(){
         return points;    
         }
        TimeScore();
+
     gameProps.gamePoints.setScore(points, +1);
     spawnTime = Date.now(); 
     }
-
-}
+}//end of BaitCollition
 
 /*makes the Bait appear when made and function run 
 function spawnGameProps(){
@@ -336,5 +339,5 @@ export function initGame(aCanvas) {
     cvs.addEventListener("mousemove", cvsMouseMove, false);
     cvs.addEventListener("click", cvsClick, false);
     document.addEventListener("keydown", cvsKeydown);
-    GLib2D.initLib(ctx, "./media/SpriteSheet_Snake.png", gameReady);
+    GLib2D.initLib(ctx, "./media/SpriteSheet_Snake1.png", gameReady);
 }

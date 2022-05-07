@@ -1,6 +1,6 @@
 "use strict";
 import * as GLib2D from "./Graphic_Lib_2D.js";
-import { gameStatus, EGameStatus, sprites} from "./game.js"
+import { gameStatus, EGameStatus, sprites, gameProps} from "./game.js"
 import { TBoardCell } from "./board.js";
 
 
@@ -8,7 +8,7 @@ import { TBoardCell } from "./board.js";
 export function TBait() {
     const boardCell = new TBoardCell(1, 1);
     const spi = sprites.Bait;
-    const pos = new GLib2D.TPoint(Math.floor(Math.random() * 19) + 1, Math.floor(Math.random() * 16) + 1);
+    const pos = new GLib2D.TPoint(Math.floor(Math.random() * 19) + 1, Math.floor(Math.random() * 18) + 1);
     const sprite = new GLib2D.TSprite(spi,pos);
 
     this.BaitPos = function(){
@@ -17,13 +17,14 @@ export function TBait() {
 
     this.update = function(){
         let posX = Math.floor(Math.random()* 20);
-        let posY = Math.floor(Math.random()* 17);
+        let posY = Math.floor(Math.random()* 19);
         boardCell.row = posX;
         boardCell.col = posY;
         pos.x = boardCell.col * spi.width;
         pos.y = boardCell.row * spi.height;
         sprite.pos = pos;
         sprite.draw;
+        
     }
 
     this.draw = function () { 

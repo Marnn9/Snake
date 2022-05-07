@@ -63,12 +63,13 @@ export function TNumber(aSpriteInfo, aPosition, aScale, aAlpha){
 }//end of class TNumber
 
 
-/** shows gamescore when playing */
+/** shows gamescore when playing, Pause and Gameover: different locations, same score
+ * used to gathering information and inserting in TNumber, then to be drawn */
 
 export function TGameScore() {
     const EndPoints = new TNumber(sprites.Number, new GLib2D.TPoint(730,260), 1, 1);
-    const Points = new TNumber(sprites.Number, new GLib2D.TPoint(855,130), 1, 0.3);
-    const appleScore = new TNumber(sprites.Number, new GLib2D.TPoint(855,20), 1, 0.3);
+    const Points = new TNumber(sprites.Number, new GLib2D.TPoint(820,130), 1, 0.3);
+    const appleScore = new TNumber(sprites.Number, new GLib2D.TPoint(820,20), 1, 0.3);
     let score = 0;
     let Apple = 0; //number of apples eaten
 

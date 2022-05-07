@@ -3,8 +3,9 @@ import {sprites, ctx, EGameStatus, gameStatus } from  "./game.js";
 
 "use strict";
 
-/** functions for drawing the buttons, one for each button to get enough info to make each sprites clickable, tried putting tem all in a single funtion
- * but it was then only the button on top of the function that got enough information to be clickable as a button*/
+/** functions for drawing the buttons, one for each button to get enough info to make each sprites clickable, 
+ * tried putting them all in a single function
+ * but it was then only the button on top of the class that got enough information to be clickable as a button*/
 export function TStartButton(){
     const pos = new GLib2D.TPoint(350, 300);
     const sprite = new GLib2D.TSprite(sprites.Play, pos);
