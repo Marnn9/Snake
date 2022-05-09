@@ -1,12 +1,14 @@
 "use strict";
 import * as GLib2D from "./Graphic_Lib_2D.js";
-import { TBoardCell, TBoardCellInfo,EBoardCellInfoType} from "./board.js"
+import { TBoardCell, TBoardCellInfo, EBoardCellInfoType} from "./board.js"
 import { TSnakeBody, TSnakeHead, TSnakeTail } from "./snake.js"
 import { TBait } from "./bait.js";
 import { THomeButton, TReplayButton, TResumeButton, TStartButton } from "./Buttons.js";
 import { TInfoboard } from "./Infoboard.js";
 import { TGameScore} from "./numbers.js";
 import { TSymboles } from "./symboles.js";
+
+
 
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -59,9 +61,10 @@ const GameProps = {
 export const gameProps = GameProps;
 export const gameBoardSize = new TBoardCell(25, 20);
 
-
 let insertBody = null;
 
+let newSnakeTailElement = null;
+let newSnakeBodyElement = null;
 
 let hndUpdateGame = null;
 
@@ -70,6 +73,7 @@ let catchTime = null;
 let time = null; 
 
 let gameSpeeds = null;
+
 
 
 /**tried making bait as an Array but the apple couldn't respawn and despawn by time,
@@ -89,8 +93,8 @@ const timeSchedulefood = Object.create(TimeSchedule); */
 
 /**drawing the objects from gameProps */
 function drawGame() {
-   /*   for(let index = 0; index < gameProps.baits.length; index ++){
-        gameProps.baits[index].draw()
+   /*   for(let index = 0; index < gameProps.baits.length; index ++){ 
+        gameProps.baits[index].draw()                                   //to draw all the items in Baits array
     }  */
    
     ctx.clearRect(0, 0, cvs.width, cvs.height);
@@ -118,70 +122,88 @@ function drawGame() {
 
 /**constantly updates the position and the frames of the game */
 export function updateGame() {
-    if(gameStatus === EGameStatus.Running){
-        for (let i = 0; i < gameProps.snake.length; i++) {    
+    if(gameStatus === EGameStatus.Running){ 
+        for (let i = 0; i < gameProps.snake.length; i++) { //this iterates the array
             const snakeElement = gameProps.snake[i];
-        if(snakeElement == gameProps.snake[0]){
-            if (gameProps.snake[0].checkCollision()) {
-                gameStatus = EGameStatus.GameOver;
-                break;
+            const head = gameProps.snake[0];
+            if(snakeElement === head){ 
+                if (head.checkCollision()) {     //Checkcollitoin from TSnakeHead
+                    gameStatus = EGameStatus.GameOver;         //SnakeHead has hit the bounderies of the canvas or the head has hit the body
+                    break;
+                }    
+                BaitCollition()                                //if an apple is "eaten", and the snake hasn't run the checkCollition, the else if is run 
+            }else if(i === (gameProps.snake.length -2)){       //if the iteration of i is two place away from the tail (end of the array), it does the next steps 
+                if(insertNewBody){                             //if baitcollition is happening insetnewBody = true, then MakeBody can happen 
+                    insertBody = snakeElement.MakeBody();      //run function MakeBody that adds a new body part 
+                }
             }
-            BaitCollition()
-        }else if(i === (gameProps.snake.length -2)){
-            if(insertNewBody){
-                insertBody = snakeElement.MakeBody();
+            
+            /* else if((newSnakeBodyElement.BodyPos().row === head.SnakePos().row &&
+            newSnakeBodyElement.BodyPos().col === head.SnakePos().col)  //if head and body is in the same location
+            ||
+            (newSnakeTailElement.TailPos().row === head.SnakePos().row &&
+            newSnakeTailElement.TailPos().col === head.SnakePos().col) //or if tail and head is in the same location
+            ||
+            (snakeElement.BodyPos().row === head.SnakePos().row &&
+            snakeElement.BodyPos().col === head.SnakePos().col) ){    //or if the new added bodypart and head is the same location
+              
+                gameStatus = EGameStatus.GameOver;                      //one statement over is true = GameOver
+              break;
+        } */ // this method did not work optimally, the information from the SnakeElement could not be used with BodyPos(), 
+             // The metod used to check if the snake hits itself is in CheckCollition in Snake.js
+            
+        if(gameStatus == EGameStatus.Running){             //the snake is only updates when the game is running
+                snakeElement.update();
             }
         }
-        if(gameStatus == EGameStatus.Running){
-            snakeElement.update();
+
+        if(insertBody!== null){                 //insertBody = snakeElement.MakeBody()
+            const tail = gameProps.snake.pop(); //tail is removed
+            gameProps.snake.push(insertBody);   //new body part added at the end of the array
+            gameProps.snake.push(tail);         //tail added again at the end
+            insertNewBody = null;               
+            insertBody = null;                  //reset back to null so no more parts will be added unwillingly
         }
-    } 
-  
-    if(insertBody!== null){
-        const tail = gameProps.snake.pop();
-        gameProps.snake.push(insertBody);
-        gameProps.snake.push(tail);
-        insertNewBody = null;
-    }
     
            /*  for(let index = 0; index < gameProps.baits.length; index ++){
-            gameProps.baits[index].update();
-        } */
-    //spawnGameProps();
+            gameProps.baits[index].update();   //updated all the items in the Baits array
+        }*/ 
+            //spawnGameProps();                //made a new Bait when updated (after time given in function)
     }
 
-    gameProps.Play.update();
+    gameProps.Play.update(); //to Animate
 
 }//end of updateGame
 
 /** making the gameProps to revert so you can refresh without refreshing the whole website */
 export function newGame() {
-    if( hndUpdateGame != null){
+    if( hndUpdateGame != null){                                 //Fix so its 0 when replay
         clearInterval(hndUpdateGame);
+        hndUpdateGame = null;
     }
+    
     gameProps.gameBoard = [];
     for (let i = 0; i < gameBoardSize.row; i++) {
-        const row = [];
+        const row = [];  
         for (let j = 0; j < gameBoardSize.col; j++) {
             row.push(new TBoardCellInfo());
         }
         gameProps.gameBoard.push(row);
     }
-    gameProps.snake = []; //resets snake to minimal length when new game by clearing the Array
-    let newSnakeElement = new TSnakeHead(new TBoardCell(2, 10));
-    gameProps.snake.push(newSnakeElement);
+    gameProps.snake = [];                                        //resets snake to minimal length when new game by clearing the Array
+    let newSnakeElement = new TSnakeHead(new TBoardCell(2 , 10));//pushes the head into the array
+    gameProps.snake.push(newSnakeElement); 
 
-    newSnakeElement = new TSnakeBody(new TBoardCell(1, 10));
-    gameProps.snake.push(newSnakeElement);
+    newSnakeBodyElement = new TSnakeBody(new TBoardCell(1, 10)); //pushes the Body into the array
+    gameProps.snake.push(newSnakeBodyElement);
 
-    newSnakeElement = new TSnakeTail(new TBoardCell(0, 10));
-    gameProps.snake.push(newSnakeElement);
+    newSnakeTailElement = new TSnakeTail(new TBoardCell(0, 10)); //pushes the Tail into the array, now the snake is only 3 parts long at start
+    gameProps.snake.push(newSnakeTailElement);
     
-    gameSpeeds = 500; //sets defaultspeed back to start-speed when a new game starts
-    gameStatus = EGameStatus.New;
+    gameSpeeds = 500;                                           //sets speed back to start-speed when a new game starts
     hndUpdateGame = setInterval(updateGame, gameSpeeds);
-    
-    gameProps.gamePoints.resetPoints();//sets points to 0 when you replay
+
+    gameProps.gamePoints.resetPoints();                         //sets score to 0 when you replay
     gameProps.bait.update()
     gameProps.gamePoints.update();
 
@@ -234,19 +256,19 @@ function cvsClick() {
     // Mouse button has clicked on Canvas
     cvs.style.cursor = "default";
      if(gameProps.Play.isMouseOver(mousePos)){
-        spawnTime = Date.now(); 
+        spawnTime = Date.now();                        //starts the timer of the first apple
         gameStatus = EGameStatus.Running;
         cvs.style.cursor = "default";
     }else if(gameProps.Retry.isMouseOver(mousePos)){
-        newGame();
+        newGame();                                     //runs the reset-function
         gameStatus = EGameStatus.Running;
         cvs.style.cursor = "default";
     }else if(gameProps.Home.isMouseOver(mousePos)){
-        newGame();
+        newGame();                                     //runs the reset-function
         gameStatus = EGameStatus.New;
         cvs.style.cursor = "default";
     }else if(gameProps.Resume.isMouseOver(mousePos)){
-        spawnTime = Date.now(); 
+        spawnTime = Date.now();                        //restarts the timer so the time will not have run when player was idle
         gameStatus = EGameStatus.Running;
         cvs.style.cursor = "default";
     }else{
@@ -282,25 +304,24 @@ function cvsKeydown(aEvent) {
     }
 }//end of cvskeydown
 
-/** if the snake head and apple is in the same place: the apple moves and gives points 
- * based on the time between the spawn and the catch of the apple, when an apple is eaten speed increases by SpeedIncrease
- * then the apple moves to new random location given from TBait*/
 function BaitCollition(){
-    if(gameProps.bait.BaitPos().row === gameProps.snake[0].SnakePos().row &&
-    gameProps.bait.BaitPos().col === gameProps.snake[0].SnakePos().col){
-        gameProps.bait.update();
+    if(gameProps.bait.BaitPos().row === gameProps.snake[0].SnakePos().row && //if the snake and apple is in the same position
+        gameProps.bait.BaitPos().col === gameProps.snake[0].SnakePos().col){
+        gameProps.bait.update();                                             //the apple moves to a new random location 
         catchTime = Date.now();
 
-    insertNewBody = true;
+    insertNewBody = true;                                                    //Set to true here so the part can be added just when an apple is eaten  
 
     const SpeedIncrease = 10;
-    clearInterval(hndUpdateGame);
-    if(hndUpdateGame >= 35){hndUpdateGame = setInterval(updateGame, 150)}
-    else{hndUpdateGame = setInterval(updateGame, (gameSpeeds -= SpeedIncrease));}
-        
-    time = catchTime - spawnTime;
+    clearInterval(hndUpdateGame);                                           //clearsinterval so it can be redefined
+    gameSpeeds -= SpeedIncrease;                                            //new speed = speed - increase;
+    if(gameSpeeds <150){                                                    //makes 150 the maximum speed it can go
+        gameSpeeds = 150;
+    }
+
+    time = catchTime - spawnTime;                                           //calculates the time used to eat an apple in ms 
     let points = null
-         function TimeScore(){
+         function TimeScore(){                                              //gives points based on the number of seconds (1000ms = 1s)
         if (time <= 3000){
             points = 10;
         }else if((time < 6000) && (time > 3000)){
@@ -314,22 +335,26 @@ function BaitCollition(){
         }
        TimeScore();
 
-    gameProps.gamePoints.setScore(points, +1);
-    spawnTime = Date.now(); 
+    gameProps.gamePoints.setScore(points, +1);                           //score is set to number of points from TimeScore(), number of apples eaten increases by 1
+    spawnTime = Date.now();                                              //the timer restarts: applied the apple moved
+    hndUpdateGame = setInterval(updateGame, gameSpeeds);                 //updates the gamespeed to the new speed
     }
+    else if(gameProps.bait.BaitPos().Infotype === EBoardCellInfoType.IsSnake){ //if the apple spawns in a cell containing the snake 
+        gameProps.bait.update();                                         //the Apple respawns at new random location
+    }
+
 }//end of BaitCollition
 
 /*makes the Bait appear when made and function run 
 function spawnGameProps(){
     const now = Date.now();
     let timeDelta = now - timeSchedulefood.timeLast;
-        if(timeDelta > timeSchedulefood.timeCreate + 6000){
-            gameProps.baits.push(new TBait());
+        if(timeDelta > timeSchedulefood.timeCreate + 6000){             //made a new bait every 6 seconds
+            gameProps.baits.push(new TBait());                          //added new bait to array
             timeSchedulefood.timeLast = now;
         } 
 }
 */
-
 
 export function initGame(aCanvas) {
     cvs = aCanvas;

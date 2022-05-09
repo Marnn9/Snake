@@ -1,7 +1,7 @@
 "use strict";
 import * as GLib2D from "./Graphic_Lib_2D.js";
-import { gameStatus, EGameStatus, sprites, gameProps} from "./game.js"
-import { TBoardCell } from "./board.js";
+import { gameStatus, EGameStatus, sprites} from "./game.js"
+import { TBoardCell, EBoardCellInfoType } from "./board.js";
 
 
 /**Class that makes and draws at a new apple at new random position if it is collition on the bait in update */
@@ -16,14 +16,14 @@ export function TBait() {
     }
 
     this.update = function(){
-        let posX = Math.floor(Math.random()* 20);
-        let posY = Math.floor(Math.random()* 19);
+        let posX = Math.floor(Math.random()* 20); //new row position when Bait is updated
+        let posY = Math.floor(Math.random()* 19); //new col position when Bait is updated
         boardCell.row = posX;
         boardCell.col = posY;
         pos.x = boardCell.col * spi.width;
         pos.y = boardCell.row * spi.height;
         sprite.pos = pos;
-        sprite.draw;
+        sprite.draw;                             //draws at new position  
         
     }
 

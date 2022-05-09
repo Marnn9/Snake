@@ -5,16 +5,17 @@ import {sprites, ctx, EGameStatus, gameStatus } from  "./game.js";
 
 /** functions for drawing the buttons, one for each button to get enough info to make each sprites clickable, 
  * tried putting them all in a single function
- * but it was then only the button on top of the class that got enough information to be clickable as a button*/
+ * but it was then only the button on top of the class that got enough information to be clickable as a button
+ * all classes are made the same way, so only the first is commented */
+
 export function TStartButton(){
     const pos = new GLib2D.TPoint(350, 300);
     const sprite = new GLib2D.TSprite(sprites.Play, pos);
     const rect = sprite.getRectangle();
     
-    /**makes the playbutton pulsate like a heartbeat */
     this.update = function(){
         sprite.setAnimationSpeed(9);
-        sprite.animate();
+        sprite.animate();               //makes the playbutton pulsatete
     }
 
     this.draw = function (){
@@ -25,12 +26,11 @@ export function TStartButton(){
         }
     };
 
-    /** function for detecting if the mouse is over the sprite by using get rectangle from GDLiB2 so its a button not just a sprite*/
     this.isMouseOver = function(aMousePos){
         let isMouseHit = false;
         switch(gameStatus){
             case EGameStatus.New:    
-                isMouseHit = rect.checkHitPosition(aMousePos);
+                isMouseHit = rect.checkHitPosition(aMousePos);  //updates the position of the rectangle by the sprite, if the checkHitPosition is run, this returns the mouse position
                 break;   
         }
         return isMouseHit;
